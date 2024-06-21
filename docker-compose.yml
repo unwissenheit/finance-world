@@ -1,15 +1,19 @@
 version: '3'
 services:
+
   frontend:
     tty: true
     build: ./frontend
+    container_name: fw-frontend
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app
+
   backend:
     tty: true
     build: ./backend
+    container_name: fw-backend
     ports:
       - "8000:8000"
     volumes:
@@ -17,8 +21,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
   db:
     image: postgres:15.7
+    container_name: fw-db
     ports:
       - "5432:5432"
     env_file:
