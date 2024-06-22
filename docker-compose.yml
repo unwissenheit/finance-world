@@ -1,0 +1,36 @@
+version: '3'
+services:
+
+  frontend:
+    tty: true
+    build: ./frontend
+    container_name: fw-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+
+  backend:
+    tty: true
+    build: ./backend
+    container_name: fw-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15.7
+    container_name: fw-db
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
