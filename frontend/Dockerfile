@@ -2,4 +2,4 @@ FROM node:20
 
 WORKDIR /app
 
-CMD [ "bash" ]
+CMD ["npx", "next", "dev", "-H", "0.0.0.0", "-p", "3000"]
