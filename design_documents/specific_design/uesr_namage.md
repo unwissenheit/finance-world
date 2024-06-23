@@ -2,45 +2,55 @@
 
 ## 概要
 
-このドキュメントは、子供向け金融教育Webアプリケーションのユーザー登録および管理機能の詳細設計について説明します。ユーザーはこの機能を通じてアカウントを作成し、プロフィールを管理することができます。
+このドキュメントは、Finance Worldのユーザー登録および管理機能の詳細設計について説明します。ユーザーはこの機能を通じてアカウントを作成し、プロフィールを管理することができます。
 
 ## 機能概要
 
 1. **ユーザー登録・ログイン**
-    - ユーザー名、パスワード、年齢、保護者のメールアドレスなどの登録。
+    - ユーザー名、パスワード、保護者のメールアドレスなどの登録。
     - 登録完了後、ログインしてアプリケーションを利用開始。
+    - 保護者ユーザーに紐付く子ユーザーは、アプリケーション内で作成する。
     
 2. **ユーザープロフィール**
     - プロフィールの編集（ユーザー名、アバターの設定など）。
     - ユーザー情報の確認と更新。
+    - 子ユーザーのプロフィールは、子ユーザー・保護者ユーザーのどちらも編集可能。
 
 ## データベース設計
 
-### ユーザーテーブル
+### 保護者テーブル
 
-| カラム名         | データ型   | 説明                 |
+| カラム名         | データ型   | 説明             |
 |--------------|--------|--------------------|
-| user_id      | String | ユーザーID（主キー）       |
-| username     | String | ユーザー名              |
-| password     | String | パスワード（ハッシュ化）    |
-| age          | Number | 年齢                 |
-| parent_email | String | 保護者のメールアドレス      |
+| id           | String | ユーザーID（主キー）     |
+| name         | String | ユーザー名              |
+| password     | String | パスワード（ハッシュ化）  |
+| email        | String | 保護者のメールアドレス    |
 | avatar_url   | String | アバターのURL          |
-| created_at   | Date   | アカウント作成日時        |
+| created_at   | Date   | アカウント作成日時       |
 | updated_at   | Date   | 最終更新日時           |
+| is_deleted   | Boolean| 削除済みのユーザか      |
+
+### 子テーブル
+| カラム名         | データ型   | 説明                |
+|--------------|--------|------------------------|
+| id           | int    |　子ユーザID(主キー)        |
+| parent_id    | String | ユーザーID（外部キー）     |
+| wallet_id    | String | ウォレットID（外部キー）    |
+| name         | String | ユーザー名                 |
+| password     | String | パスワード（ハッシュ化しない）|
 
 ## API設計
 
-### ユーザー登録
+### ユーザー登録(保護者)
 
-- **URL**: `/api/register`
+- **URL**: `/api/parent/register`
 - **メソッド**: POST
 - **リクエストボディ**:
     ```json
     {
-        "username": "example_user",
-        "password": "example_password",
-        "age": 10,
+        "username": "username",
+        "password": "password",
         "parent_email": "parent@example.com"
     }
     ```
@@ -48,10 +58,29 @@
     ```json
     {
         "message": "User registered successfully",
-        "user_id": "123456789"
+        "parent_user_id": "123456789"
     }
     ```
 
+### ユーザー登録(子)
+
+- **URL**: `/api/child/register`
+- **メソッド**: POST
+- **リクエストボディ**:
+    ```json
+    {
+        "parent_id": "123456789",
+        "username": "username",
+        "password": "password",
+    }
+    ```
+- **レスポンス**:
+    ```json
+    {
+        "message": "User registered successfully",
+        "child_user_id": "123456789"
+    }
+    ```
 ### ユーザーログイン
 
 - **URL**: `/api/login`
@@ -59,8 +88,8 @@
 - **リクエストボディ**:
     ```json
     {
-        "username": "example_user",
-        "password": "example_password"
+        "username": "username",
+        "password": "password"
     }
     ```
 - **レスポンス**:
@@ -71,6 +100,22 @@
     }
     ```
 
+### ユーザー削除
+
+- **URL**: `/api/profile`
+- **メソッド**: DELETE
+- **ヘッダー**: 
+    ```json
+    {
+        "Authorization": "Bearer jwt_token"
+    }
+    ```
+- **レスポンス**:
+    ```json
+    {
+        "message": "user deleted"
+    }
+    ```
 ### プロフィール取得
 
 - **URL**: `/api/profile`
@@ -85,8 +130,7 @@
     ```json
     {
         "user_id": "123456789",
-        "username": "example_user",
-        "age": 10,
+        "username": "username",
         "parent_email": "parent@example.com",
         "avatar_url": "https://example.com/avatar.png"
     }
@@ -95,6 +139,7 @@
 ### プロフィール更新
 
 - **URL**: `/api/profile`
+- **備考**: avatar_urlだけでなく、他の項目(名前、パスワードなど)も更新可能
 - **メソッド**: PUT
 - **ヘッダー**: 
     ```json
@@ -116,8 +161,7 @@
     }
     ```
 
-## 操作の流れ
-
+## 操作の流れ(シーケンス図)
 ```mermaid
 sequenceDiagram
     participant User as ユーザー
